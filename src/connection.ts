@@ -4076,13 +4076,14 @@ export class Connection {
     } else {
       let disableCache = this._disableBlockhashCaching;
       for (;;) {
-        const latestBlockhash = await this._blockhashWithExpiryBlockHeight(
-          disableCache,
-        );
-        transaction.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-        transaction.recentBlockhash = latestBlockhash.blockhash;
-
-        if (!signers) break;
+        // replace blockhash with recent one if necessary
+        if (signers) {
+          const latestBlockhash = await this._blockhashWithExpiryBlockHeight(
+            disableCache,
+          );
+          transaction.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+          transaction.recentBlockhash = latestBlockhash.blockhash;
+        } else break;
 
         transaction.sign(...signers);
         if (!transaction.signature) {
@@ -4132,6 +4133,8 @@ export class Connection {
 
     if (signers) {
       config.sigVerify = true;
+    } else {
+      config.replaceRecentBlockhash = true;
     }
 
     const args = [encodedTransaction, config];
